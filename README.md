@@ -1,5 +1,5 @@
 # offaxis_holosim
 This robust tool automates the simulation of the recording  process, facilitating mass production of holograms and enhancing the development and training of deep learning models in DHM applications. A total of 30’972 512x512 holograms were simulated, alongside their corresponding amplitude and phase reconstructions, for a total of 92’216 images.
 
-The complete dataset can be downloaded at:
+The complete dataset generated using this algortithm can be downloaded at:
 https://www.kaggle.com/datasets/mariareyb/simulated-out-of-focus-holograms
