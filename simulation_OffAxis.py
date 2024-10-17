@@ -44,49 +44,70 @@ def scale_sample(sample, factor):
     scaled_sample = (sample - np.min(sample)) / (np.max(sample) - np.min(sample)) * factor
     return scaled_sample
 
-# Function to add speckle noise to an object phase
-def speckle(object_phase, noise_level, visualization='False'):
+
+
+# Function to add speckle noise
+def speckle(object, width, height, std_dev, visualization):
     """
-    Add Gaussian speckle noise to the object phase.
+    Add speckle noise to the object wave.
     
     Parameters:
-    - object_phase: The phase of the object (numpy array).
+    - object: object to add the speckle noise.
+    - wavelength: illumination wavelength.
+    - width: size image Y.
+    - height: size image X.
+    - std_dev: speckle noise standard deviation
+    - visualization: True of False
     - noise_level: Standard deviation of the Gaussian noise.
     - visualization: Whether to visualize the noise distribution (str).
     
     Returns:
-    - noisy_phase: The noisy object phase (numpy array).
+    - objSpeckle: The noisy object phase.
     """
-    # Create Gaussian noise
-    noise = np.random.normal(0, noise_level, object_phase.shape)
-    noisy_phase = object_phase + noise
-    
-    # Normalize to the range [-π, π]
-    noisy_phase = np.mod(noisy_phase + np.pi, 2 * np.pi) - np.pi
 
-    # Visualization of noise distribution if requested
+    phaseObject = object * (2 * math.pi) - math.pi
+
+    # Generate random samples from a normal distribution
+    speckle = np.random.normal(loc=0, scale=std_dev, size=(width, height))
+    speckle = np.clip(speckle, -np.pi, np.pi)
+    objSpeckle = phaseObject + speckle
+
+    minVal = np.min(objSpeckle)
+    maxVal = np.max(objSpeckle)
+    objSpeckle = ((objSpeckle - minVal) / (maxVal - minVal)) * (2 * np.pi) - np.pi
+    #print(np.min(objSpeckle), np.max(objSpeckle))
+
     if visualization == 'True':
-        plt.hist(noise.flatten(), bins=30, color='gray')
-        plt.title('Speckle Noise Distribution')
+        hist, bins = np.histogram(speckle, bins=30, density=True)
+        bin_centers = 0.5 * (bins[1:] + bins[:-1])
+        plt.plot(bin_centers, hist, color='blue', label='Distribución de la matriz')
+        plt.title('Histogram of Speckle distribution')
         plt.xlabel('Value')
-        plt.ylabel('Frequency')
+        plt.ylabel('Density')
         plt.show()
+        ut.imageShow(speckle, 'speckle')
 
-    return noisy_phase
+    return objSpeckle
 
 # Function to convert the noisy object phase to a complex wave
 def complexObject(noisy_phase):
+
+    complex_wave = np.exp(1j * noisy_phase)  # E^iφ representation
+    return complex_wave
+
+def complexObject(object, objSpeckle):
     """
     Convert the noisy phase to a complex object wave.
     
     Parameters:
-    - noisy_phase: The noisy object phase (numpy array).
+    - objSpeckle: The noisy object phase.
     
     Returns:
-    - complex_wave: The complex representation of the object wave (numpy array).
+    - objWave: The complex representation of the object wave.
     """
-    complex_wave = np.exp(1j * noisy_phase)  # E^iφ representation
-    return complex_wave
+    objWave = np.exp(1j * objSpeckle)     # E^iφ representation
+
+    return objWave
 
 # Function to generate a reference wave with random angles
 def refWave(dist, wavelength):
@@ -105,82 +126,163 @@ def refWave(dist, wavelength):
     reference_wave = np.exp(1j * (2 * np.pi / wavelength * dist * np.cos(theta)))
     return reference_wave
 
-# Function to generate an off-axis hologram
-def off_axis(object_wave, reference_wave):
+# Function to generate the reference wave
+def refWave(wavelength, dxy, width, height, radius, object):
+
+     """
+    Generate a reference wave for holography.
+    
+    Parameters:
+    - wavelength: illumination wavelength.
+    - dxy: pixel pitch.
+    - width: size image Y.
+    - height: size image X.
+    - radius: pupil radius. 
+    
+    Returns:
+    - ref_wave: The complex representation of the reference wave.
+    
+    """
+
+    disc = round(radius)
+
+    X, Y = np.meshgrid(np.arange(-height / 2, height / 2), np.arange(-width / 2, width / 2), indexing='ij')
+    fx_0 = height / 2
+    fy_0 = width / 2
+    k = (2 * math.pi) / wavelength
+
+    min_dist = 2.1 * disc
+    max_dist = min_dist + np.random.choice([0, 10, 30, 40, 60])  #for 512x512 images
+    #max_dist = min_dist + np.random.choice([0, 10, 20, 30])  #for 256x256 images
+    fx = (np.random.choice([min_dist, max_dist])*np.random.choice([-1, 1]))
+    fy = (min_dist)
+
+    theta_x = math.asin((fx_0 - fx) * wavelength / (height * dxy))
+    theta_y = math.asin((fy_0 - fy) * wavelength / (width * dxy))
+    ref_wave = np.exp(1j * k * ((math.sin(theta_x) * X * dxy) + (math.sin(theta_y) * Y * dxy)))
+
+    return ref_wave
+
+
+# Function to generate off-axis hologram
+def off_axis(width, height, objWave, reference, disc):
     """
     Generate an off-axis hologram by combining object and reference waves.
     
     Parameters:
-    - object_wave: The complex object wave (numpy array).
-    - reference_wave: The complex reference wave (numpy array).
+    - objWave: The complex object wave.
+    - reference: The complex reference wave.
     
     Returns:
-    - hologram: The resulting hologram (numpy array).
+    - holo: The resulting hologram.
     """
-    hologram = np.real(object_wave * np.conj(reference_wave))  # Interference pattern
-    return hologram
+    
+    mask = ut.circularMask(width, height, disc, width / 2, height / 2, False)
+    
+    ft = np.fft.fft2(objWave)
+    ft = np.fft.fftshift(ft)
+    
+    # Apply the mask in the frequency domain
+    objWave2 = ft * mask
+    
+    # Perform the inverse Fourier transform
+    ift = np.fft.ifft2(objWave2)
+    ift = np.fft.fftshift(ift)
+    objWaveFil = np.fft.fftshift(ift)
+    
+    # Combine the object and reference waves to form the hologram
+    holo = np.real((reference + objWaveFil) * np.conj(reference + objWaveFil))
+    #holo = np.abs(reference + objWaveFil)**2
+    return holo
 
-# Function for angular spectrum propagation (general version)
-def angularSpectrumog(field, dx, dz, wavelength):
-    """
+
+def angularSpectrumog(field, width, height, wavelength, distance, dxy):
+
+     """
     Propagate a complex field using the angular spectrum method.
     
     Parameters:
     - field: The complex input field (numpy array).
-    - dx: Sampling interval in x (float).
-    - dz: Propagation distance (float).
-    - wavelength: Wavelength of the light (float).
+    - dx, dy: sampling pitches (float).
+    - z: Propagation distance (float).
+    - wavelength: illumination wavelength. (float).
     
     Returns:
     - propagated_field: The propagated field (numpy array).
     """
-    # Determine the size of the field and spatial frequencies
-    N = field.shape[0]  # Assuming square field
-    k = 2 * np.pi / wavelength  # Wave number
-    fx = np.fft.fftfreq(N, dx)  # Spatial frequency in x
-    fy = np.fft.fftfreq(N, dx)  # Spatial frequency in y
-    FX, FY = np.meshgrid(fx, fy)  # Create meshgrid for 2D frequencies
 
-    # Compute the transfer function
-    H = np.exp(1j * k * dz * np.sqrt(1 - (wavelength * FX)**2 - (wavelength * FY)**2))
+    k = 2 * np.pi / wavelength 
+    
+    field = np.array(field)
+    M, N = field.shape
+    x = np.arange(0, N, 1)  # array x
+    y = np.arange(0, M, 1)  # array y
+    X, Y = np.meshgrid(x - (N / 2), y - (M / 2), indexing='xy')
 
-    # Perform Fourier Transform, apply transfer function, and inverse FT
-    propagated_field = np.fft.fftshift(np.fft.ifft2(np.fft.fft2(field) * H))
-    return propagated_field
+    dfx = 1 / (dxy * M)
+    dfy = 1 / (dxy * N)
+
+    field_spec = np.fft.fftshift(field)
+    field_spec = np.fft.fft2(field_spec)
+    field_spec = np.fft.fftshift(field_spec)
+
+    phase = np.exp(1j * distance * 2 * np.pi * np.sqrt(np.power(1 / wavelength, 2) - (np.power(X * dfx, 2) + np.power(Y * dfy, 2))))
+    
+    tmp = field_spec * phase
+
+    out = np.fft.ifftshift(tmp)
+    out = np.fft.ifft2(out)
+    out = np.fft.ifftshift(out)
+    
+    return out
 
 
 # Main function to simulate hologram generation
-def hologram(sample, dist, wavelength, noise_level):
+def hologram(sample, wavelength, dxy, std_dev, distance, disc):
     """
     Simulate the generation of a hologram from a sample.
     
     Parameters:
     - sample: The input sample image (numpy array).
-    - dist: Distance to the object (float).
-    - wavelength: Wavelength of the illumination (float).
-    - noise_level: Standard deviation of the Gaussian noise (float).
+    - distance: Propagation distance (float).
+    - wavelength: illumination wavelength (float).
+    - std_dev: speckle noise standard deviation (float).
     
     Returns:
     - hologram: The generated hologram (numpy array).
     """
-    # Scale the sample
-    scaled_sample = scale_sample(sample, 255)
+    # Get image size information
+    width, height = ut.imgInfo(sample)
 
-    # Add speckle noise to the sample
-    noisy_phase = speckle(scaled_sample, noise_level, visualization='False')
+    #Binarize MNIST image for sharpness
+    object = ut.binarize(sample)
 
-    # Convert the noisy phase to a complex wave
-    complex_wave = complexObject(noisy_phase)
+    object = scale_sample(object, 1)
+    
+    # ut.imageShow(object, 'scale object')
+    
+    #ut.imageShow(ut.intensity(object, False), 'Sample (Intensity)')
 
-    # Generate the reference wave
-    reference_wave = refWave(dist, wavelength)
+    # add speckle noise
+    sampleSpeckle = speckle(object, width, height, std_dev, visualization='False')
+    #ut.imageShow(sampleSpeckle, 'sample + speckle')
 
-    # Generate the hologram using off-axis technique
-    hologram = off_axis(complex_wave, reference_wave)
+    # complex object wave
+    objWave = complexObject(object, sampleSpeckle)
 
-    # Propagate the hologram
-    propagated_hologram = angularSpectrumog(hologram, dx=1, dz=dist, wavelength=wavelength)
+    # propagation
+    if distance != 0:
+        objWave = angularSpectrumog(objWave, width, height, wavelength, distance, dxy)
+    
+    #ut.imageShow(ut.intensity(objWave, False), 'Propagated')
+    
+    #ut.imageShow(ut.intensity(objWave, True), f'Propagated object at {distance}')
+    reference = refWave(wavelength, dxy, width, height, disc, objWave)
+    
+    # Hologram simulation
+    holo = off_axis(width, height, objWave, reference, disc)
 
-    return propagated_hologram
+    return holo
+
 
 
