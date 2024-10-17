@@ -39,11 +39,17 @@ def scale_sample(sample, factor):
     - factor: The scaling factor.
     
     Returns:
-    - scaled_sample: Scaled sample image.
+    - object: Scaled sample image.
     """
-    scaled_sample = (sample - np.min(sample)) / (np.max(sample) - np.min(sample)) * factor
-    return scaled_sample
+    # inputs:
+    # sample: image to become in the sample
+    minVal = np.min(sample)
+    maxVal = np.max(sample)
+    object = ((sample - minVal) / (maxVal - minVal))
+    object = object * factor
+    #object = sample / np.max(sample)
 
+    return object
 
 
 # Function to add speckle noise
@@ -196,7 +202,7 @@ def off_axis(width, height, objWave, reference, disc):
     return holo
 
 
-def angularSpectrumog(field, width, height, wavelength, distance, dxy):
+def angularSpectrum(field, width, height, wavelength, distance, dxy):
 
      """
     Propagate a complex field using the angular spectrum method.
@@ -254,32 +260,26 @@ def hologram(sample, wavelength, dxy, std_dev, distance, disc):
     # Get image size information
     width, height = ut.imgInfo(sample)
 
-    #Binarize MNIST image for sharpness
+    # Binarize MNIST image for sharpness
     object = ut.binarize(sample)
 
+    # Scale image 
     object = scale_sample(object, 1)
     
-    # ut.imageShow(object, 'scale object')
-    
-    #ut.imageShow(ut.intensity(object, False), 'Sample (Intensity)')
-
-    # add speckle noise
+    # Add speckle noise
     sampleSpeckle = speckle(object, width, height, std_dev, visualization='False')
-    #ut.imageShow(sampleSpeckle, 'sample + speckle')
 
-    # complex object wave
+    # Create complex object wave
     objWave = complexObject(object, sampleSpeckle)
 
-    # propagation
+    # Propagate object wave 
     if distance != 0:
-        objWave = angularSpectrumog(objWave, width, height, wavelength, distance, dxy)
+        objWave = angularSpectrum(objWave, width, height, wavelength, distance, dxy)
     
-    #ut.imageShow(ut.intensity(objWave, False), 'Propagated')
-    
-    #ut.imageShow(ut.intensity(objWave, True), f'Propagated object at {distance}')
+    # Generate reference wave
     reference = refWave(wavelength, dxy, width, height, disc, objWave)
     
-    # Hologram simulation
+    # Generate interferogram (hologram) between object and reference waves.
     holo = off_axis(width, height, objWave, reference, disc)
 
     return holo
