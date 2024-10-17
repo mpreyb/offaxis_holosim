@@ -1,5 +1,5 @@
 '''
-    Simulation of out-of-focus DHM holograms 
+    Generation of an out-of-focus DHM hologram database
     
     This script processes a folder of input images, simulates off-axis digital holograms 
     at various propagation distances, and saves the resulting hologram images into an 
