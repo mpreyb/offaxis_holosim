@@ -1,5 +1,10 @@
-// Copyright 2024 EAFIT University
-// Licensed under the MIT License, you may not use this file except in compliance with the License.
+ 
+/*
+ * Copyright 2024 Universidad EAFIT
+ * 
+ * Licensed under the MIT License;
+ * you may not use this file except in compliance with the License.
+ */
 
 # offaxis_holosim
 This repository presents a computational framework to simulate off-axis holograms, aimed at generating a comprehensive database of focused and defocused off-axis simulated holograms for training deep learning models. By leveraging the MNIST database to represent various microscopic geometries, this framework efficiently produces defocused holograms via the angular spectrum method. The holograms are created by the amplitude superposition of a complex-valued plane object wave with a plane reference wave. The implemented reconstruction algorithm provides in-focus aberration-free phase and amplitude 
