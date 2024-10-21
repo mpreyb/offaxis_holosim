@@ -4,7 +4,7 @@ reconstructions by minimizing a normalized variance function. This robust tool a
 
 
 ## Downloads
-The complete dataset generated using this algortithm can be downloaded at:
+The complete dataset generated using this algorithm (distances from -50 to 50 mm with a step of 1mm) can be downloaded at:
 https://www.kaggle.com/datasets/mariareyb/simulated-out-of-focus-holograms
 
 ## License & Copyright
