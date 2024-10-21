@@ -11,7 +11,7 @@ https://www.kaggle.com/datasets/mariareyb/simulated-out-of-focus-holograms
 Copyright 2024 Universidad EAFIT
 Licensed under the MIT License; you may not use this file except in compliance with the License.
 
-
 ## Contact
-Authors: Maria Paula Rey, Raul Castañeda
 Applied Sciences and Engineering School, EAFIT University (Applied Optics Group)
+- Maria Paula Rey (mpreyb@eafit.edu.co)
+- Raul Castañeda (racastaneq@eafit.edu.co)
