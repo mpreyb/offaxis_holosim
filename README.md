@@ -7,7 +7,7 @@ The complete dataset generated using this algorithm (distances from -50 to 50 mm
 https://www.kaggle.com/datasets/mariareyb/simulated-out-of-focus-holograms
 
 ## Reference
-For more details on these models, please refer to the following publications. These are also the recommended citations if you use this tool in your work.
+For more details on these models, please refer to the following publications. These are also the recommended citations if you use this tool in your work: (Pending Publication).
 
 ## License & Copyright
 Copyright 2024 Universidad EAFIT
