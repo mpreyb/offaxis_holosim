@@ -25,7 +25,7 @@
 
 
 # import libraries
-import utilities as ut                  # Custom utility functions used throughout the project, likely for image handling and saving.
+import utilities as ut                  # Custom utility functions used throughout the project.
 import simulation_OffAxis as sro        # Custom module for simulating off-axis holograms.
 import os                               
 import matplotlib.pyplot as plt      
