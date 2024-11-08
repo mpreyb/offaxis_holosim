@@ -115,23 +115,6 @@ def complexObject(object, objSpeckle):
 
     return objWave
 
-# Function to generate a reference wave with random angles
-def refWave(dist, wavelength):
-    """
-    Generate a reference wave for holography.
-    
-    Parameters:
-    - dist: Distance to the object (float).
-    - wavelength: Wavelength of the illumination (float).
-    
-    Returns:
-    - reference_wave: The complex representation of the reference wave (numpy array).
-    """
-    # Generate random angle and compute phase
-    theta = np.random.uniform(0, 2 * np.pi)
-    reference_wave = np.exp(1j * (2 * np.pi / wavelength * dist * np.cos(theta)))
-    return reference_wave
-
 # Function to generate the reference wave
 def refWave(wavelength, dxy, width, height, radius, object):
 
